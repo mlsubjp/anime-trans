@@ -56,14 +56,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .cache/models
-          key: kotoba-whisper-v2.0-q5_0
+          key: kotoba-whisper
 
       - name: Download Kotoba-Whisper model
         if: steps.cache-model.outputs.cache-hit != 'true'
         run: |
           mkdir -p .cache/models
-          wget -O .cache/models/ggml-kotoba-whisper-v2.0-q5_0.bin \
-            https://huggingface.co/kotoba-tech/kotoba-whisper-v2.0-ggml/resolve/main/ggml-kotoba-whisper-v2.0-q5_0.bin
+          wget -O .cache/models/ggml-kotoba-whisper-v2.0.bin \
+            https://huggingface.co/kotoba-tech/kotoba-whisper-v2.0-ggml/resolve/main/ggml-kotoba-whisper-v2.0.bin
 
       # -------------------------
       # Transcription
