@@ -1,0 +1,86 @@
+name: Kotoba-Whisper Subtitle Generator
+
+on:
+  workflow_dispatch:
+    inputs:
+      audio_repo:
+        description: "Private audio repo (owner/name)"
+        required: true
+      release_tag:
+        description: "Release tag containing audio"
+        required: true
+      audio_filename:
+        description: "Audio filename"
+        required: true
+      output_name:
+        description: "Subtitle output name (no extension)"
+        required: true
+
+jobs:
+  transcribe:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install system deps
+        run: |
+          sudo apt update
+          sudo apt install -y ffmpeg cmake build-essential git
+
+      # -------------------------
+      # Cache whisper.cpp build
+      # -------------------------
+      - name: Cache whisper.cpp build
+        id: cache-whisper
+        uses: actions/cache@v4
+        with:
+          path: .cache/whisper
+          key: whisper-cpp-build-v1
+
+      - name: Build whisper.cpp
+        if: steps.cache-whisper.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p .cache/whisper
+          git clone --depth 1 https://github.com/ggml-org/whisper.cpp.git .cache/whisper/whisper.cpp
+          cd .cache/whisper/whisper.cpp
+          cmake -S . -B build
+          cmake --build build -j$(nproc)
+
+      # -------------------------
+      # Cache Kotoba-Whisper model
+      # -------------------------
+      - name: Cache Kotoba-Whisper model
+        id: cache-model
+        uses: actions/cache@v4
+        with:
+          path: .cache/models
+          key: kotoba-whisper-v2.0-q5_0
+
+      - name: Download Kotoba-Whisper model
+        if: steps.cache-model.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p .cache/models
+          wget -O .cache/models/ggml-kotoba-whisper-v2.0-q5_0.bin \
+            https://huggingface.co/kotoba-tech/kotoba-whisper-v2.0-ggml/resolve/main/ggml-kotoba-whisper-v2.0-q5_0.bin
+
+      # -------------------------
+      # Transcription
+      # -------------------------
+      - name: Run transcription
+        env:
+          GH_TOKEN: ${{ secrets.AUDIO_REPO_TOKEN }}
+        run: |
+          bash transcribe_remote_release.sh \
+            "${{ inputs.audio_repo }}" \
+            "${{ inputs.release_tag }}" \
+            "${{ inputs.audio_filename }}" \
+            "${{ inputs.output_name }}"
+
+      - name: Upload subtitles
+        uses: actions/upload-artifact@v4
+        with:
+          name: subtitles
+          path: "*.srt"
+          
