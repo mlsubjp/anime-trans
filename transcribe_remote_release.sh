@@ -6,7 +6,7 @@ RELEASE_TAG="$2"    # release tag
 AUDIO_FILE="$3"     # audio filename
 OUTPUT_NAME="$4"
 
-MODEL_PATH=".cache/models/ggml-kotoba-whisper-v2.0-q5_0.bin"
+MODEL_PATH=".cache/models/ggml-kotoba-whisper-v2.0.bin"
 WHISPER_BIN=".cache/whisper/whisper.cpp/build/bin/whisper-cli"
 
 echo "Downloading audio from $AUDIO_REPO@$RELEASE_TAG"
@@ -21,9 +21,7 @@ echo "Running Kotoba-Whisper"
   -f input16.wav \
   -l ja \
   -osrt \
-  -t "$(nproc)" \
-  --beam-size 1 \
-  --best-of 1
+  -t "$(nproc)"
 
 mv input16.wav.srt "${OUTPUT_NAME}.srt"
 
